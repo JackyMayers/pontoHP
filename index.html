@@ -1,241 +1,250 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
-    <title>Controle de ponto H.M.A.S</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ajuste de Ponto</title>
     <style>
         body {
-            background-color: #f0f0f0; /* Cor de fundo mais escura */
+            font-family: Arial, sans-serif;
+            background-color: #dcdcdc;
+            color: #333;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        }
+        input, textarea, button {
+            margin: 5px 0;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: calc(100% - 22px);
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
         }
     </style>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
 </head>
 <body>
-    <center>
-    <b>
-        <a href="https://jackymayers.github.io/farmacia/"><font color="purple"> Farmacia</font></a>
-    </b>
-    </center>
-    <h2>Controle de ponto H.M.A.S</h2>
-
-    <form id="formDados">
-        ID: <input type="text" id="idInput" placeholder="Digite o ID"> <br><br>
-        Nome: <input type="text" id="nomeInput" placeholder="Digite o Nome"> <br><br>
-        Função: <input type="text" id="funcaoInput" placeholder="Digite a Função"> <br><br>
-        <textarea id="dadosInput" placeholder="Cole os dados aqui no formato: DD/MM/AAAA - HH horas MM minutos"></textarea><br><br>
-        <button type="button" onclick="processarDados()">Processar Dados</button><br><br>
-    </form>
-
-    <form id="formManual">
-        Data: <input type="text" id="dataManualInput" placeholder="DD/MM/AAAA"> <br><br>
-        Hora Entrada: <input type="number" id="horaEntradaInput" placeholder="HH"> 
-        Minuto Entrada: <input type="number" id="minutoEntradaInput" placeholder="MM"> <br><br>
-        Hora Saída: <input type="number" id="horaSaidaInput" placeholder="HH"> 
-        Minuto Saída: <input type="number" id="minutoSaidaInput" placeholder="MM"> <br><br>
-        <button type="button" onclick="adicionarManual()">Adicionar Manualmente</button><br><br>
-    </form>
-
-    <form id="formTempoManual">
-        Horas: <input type="number" id="horasManualInput" placeholder="Horas"> 
-        Minutos: <input type="number" id="minutosManualInput" placeholder="Minutos"> <br><br>
-        <button type="button" onclick="adicionarTempoManual()">Adicionar Tempo Manual</button><br><br>
-    </form>
-
-    <ul id="listaDados"></ul>
-
-    <button type="button" onclick="calcularResultados()">Calcular</button>
-
-    <p id="resultado"></p>
-
-    <p id="horasFaltantes"></p>
-
-    <textarea id="justificativaInput" placeholder="Justificar ausência caso não tenha atingido a meta"></textarea><br><br>
-    <button type="button" onclick="salvarEmBlocoDeNotas()">Salvar em Bloco de Notas</button>
+    <div class="container">
+        <h1>Ajuste de Ponto</h1>
+        <form id="timeForm">
+            <h2>Entradas do Bot</h2>
+            <textarea id="botEntries" rows="5" placeholder="Cole as entradas do bot aqui, uma por linha (ex: 10/09/24 - 23 minutos)"></textarea>
+            <button type="button" onclick="calculateBotEntries()">Calcular Tempo do Bot</button>
+            
+            <h2>Ajuste de Ponto Manual</h2>
+            <textarea id="manualEntries" rows="5" placeholder="Nome: Jacky Mayers Antonelli&#10;Passaporte: 2885&#10;Data: 10/09/2024&#10;Entrada: 19:57&#10;Saída: 21:40"></textarea>
+            <button type="button" onclick="calculateManualPoint()">Calcular Ajuste de Ponto</button>
+            
+            <h2>Adicionar Horas e Minutos</h2>
+            <input type="number" id="extraHours" placeholder="Horas" />
+            <input type="number" id="extraMinutes" placeholder="Minutos" />
+            <button type="button" onclick="addExtraTime()">Adicionar Tempo</button>
+            
+            <h2>Justificativa</h2>
+            <textarea id="justification" rows="3" placeholder="Justifique caso a meta não seja batida"></textarea>
+        </form>
+        
+        <div class="result">
+            <h2>Resultado</h2>
+            <p id="totalTime">Tempo total trabalhado: 0 horas e 0 minutos.</p>
+            <p id="daysWorked">Dias trabalhados: 0.</p>
+            <p id="metaStatus">A meta de 7 horas não foi batida. Faltam 7 horas e 0 minutos.</p>
+            <p id="justificationResult"></p>
+        </div>
+    </div>
 
     <script>
-        let dados = [];
+        function parseTime(timeString) {
+            let hours = 0;
+            let minutes = 0;
 
-        function processarDados() {
-            let id = document.getElementById("idInput").value;
-            let nome = document.getElementById("nomeInput").value;
-            let funcao = document.getElementById("funcaoInput").value;
-            let dadosInput = document.getElementById("dadosInput").value;
-            let dadosSeparados = dadosInput.split('\n');
-            dados = dados.concat(dadosSeparados.map(item => {
-                return { id: id, nome: nome, funcao: funcao, dados: item };
-            }));
-            exibirDados();
+            const hourMatch = timeString.match(/(\d+)\s*hora/);
+            if (hourMatch) {
+                hours = parseInt(hourMatch[1], 10);
+            }
+
+            const minuteMatch = timeString.match(/(\d+)\s*minuto/);
+            if (minuteMatch) {
+                minutes = parseInt(minuteMatch[1], 10);
+            }
+
+            return { hours, minutes };
         }
 
-        function adicionarManual() {
-            let id = document.getElementById("idInput").value;
-            let nome = document.getElementById("nomeInput").value;
-            let funcao = document.getElementById("funcaoInput").value;
-            let data = document.getElementById("dataManualInput").value;
-            let horaEntrada = document.getElementById("horaEntradaInput").value;
-            let minutoEntrada = document.getElementById("minutoEntradaInput").value;
-            let horaSaida = document.getElementById("horaSaidaInput").value;
-            let minutoSaida = document.getElementById("minutoSaidaInput").value;
+        function calculateBotEntries() {
+            let botEntries = document.getElementById('botEntries').value.trim().split('\n');
+            let timeMap = new Map();
 
-            if (data && horaEntrada !== "" && minutoEntrada !== "" && horaSaida !== "" && minutoSaida !== "") {
-                let entrada = moment(`${data} ${horaEntrada}:${minutoEntrada}`, 'DD/MM/YYYY HH:mm');
-                let saida = moment(`${data} ${horaSaida}:${minutoSaida}`, 'DD/MM/YYYY HH:mm');
-                if (entrada.isValid() && saida.isValid() && saida.isAfter(entrada)) {
-                    let duracao = moment.duration(saida.diff(entrada));
-                    let horas = Math.floor(duracao.asHours());
-                    let minutos = duracao.minutes();
-                    let resultadoParcial = `${entrada.format('DD/MM/YY')} - ${horas} hora${horas !== 1 ? 's' : ''} ${minutos} minuto${minutos !== 1 ? 's' : ''}`;
-                    
-                    dados.push({ id: id, nome: nome, funcao: funcao, dados: resultadoParcial });
-                    exibirDados();
+            botEntries.forEach(entry => {
+                let [date, time] = entry.split(' - ');
+                time = time.trim();
+                let timeData = parseTime(time);
+
+                if (timeMap.has(date)) {
+                    let current = timeMap.get(date);
+                    current.hours += timeData.hours;
+                    current.minutes += timeData.minutes;
+                    if (current.minutes >= 60) {
+                        current.hours += Math.floor(current.minutes / 60);
+                        current.minutes = current.minutes % 60;
+                    }
                 } else {
-                    alert("Por favor, verifique se a hora de entrada é antes da hora de saída e se os valores são válidos.");
-                }
-            } else {
-                alert("Por favor, preencha todos os campos para adicionar manualmente.");
-            }
-        }
-
-        function adicionarTempoManual() {
-            let id = document.getElementById("idInput").value;
-            let nome = document.getElementById("nomeInput").value;
-            let funcao = document.getElementById("funcaoInput").value;
-            let horasManual = document.getElementById("horasManualInput").value;
-            let minutosManual = document.getElementById("minutosManualInput").value;
-            let dataAtual = moment().format('DD/MM/YY');
-            
-            if (horasManual !== "" && minutosManual !== "") {
-                let resultadoParcial = `${dataAtual} - ${horasManual} hora${horasManual !== '1' ? 's' : ''} ${minutosManual} minuto${minutosManual !== '1' ? 's' : ''}`;
-                
-                dados.push({ id: id, nome: nome, funcao: funcao, dados: resultadoParcial });
-                exibirDados();
-            } else {
-                alert("Por favor, preencha os campos de horas e minutos.");
-            }
-        }
-
-        function exibirDados() {
-            let lista = document.getElementById("listaDados");
-            lista.innerHTML = "";
-            dados.forEach(item => {
-                let li = document.createElement("li");
-                li.appendChild(document.createTextNode(item.dados));
-                lista.appendChild(li);
-            });
-        }
-
-        function calcularResultados() {
-            let totalMinutos = 0;
-            let diasTrabalhados = new Set();
-
-            dados.forEach(item => {
-                let partes = item.dados.split(' - ');
-                if (partes.length === 2) {
-                    let data = moment(partes[0], 'DD/MM/YY').format('DD/MM/YYYY');
-                    if (moment(data, 'DD/MM/YYYY').isValid()) {
-                        diasTrabalhados.add(data);
-                    }
-
-                    let tempo = partes[1].split(' ');
-                    let horas = 0;
-                    let minutos = 0;
-                    for (let i = 0; i < tempo.length; i++) {
-                        if (tempo[i] === 'hora' || tempo[i] === 'horas') {
-                            horas = parseInt(tempo[i - 1]) || 0;
-                        }
-                        if (tempo[i] === 'minuto' || tempo[i] === 'minutos') {
-                            minutos = parseInt(tempo[i - 1]) || 0;
-                        }
-                    }
-                    totalMinutos += horas * 60 + minutos;
+                    timeMap.set(date, { hours: timeData.hours, minutes: timeData.minutes });
                 }
             });
 
-            let totalHoras = Math.floor(totalMinutos / 60);
-            let totalMinutosExatos = totalMinutos % 60;
+            let totalMinutes = 0;
+            let totalHours = 0;
+            let totalDays = timeMap.size;
 
-            let atingiuMetaHoras = totalHoras >= 7;
-            let atingiuMetaDias = diasTrabalhados.size >= 3;
-
-            let resultado = `Tempo total trabalhado: ${totalHoras} horas e ${totalMinutosExatos} minutos.`;
-            resultado += `<br>`;
-            resultado += `Dias trabalhados: ${diasTrabalhados.size}.`;
-            resultado += `<br>`;
-
-            if (atingiuMetaHoras) {
-                resultado += `A meta de 7 horas foi batida. `;
-            } else {
-                resultado += `A meta de 7 horas não foi batida. `;
-                calcularHorasFaltantes(totalHoras, totalMinutosExatos);
-            }
-
-            if (atingiuMetaDias) {
-                resultado += `A meta de 3 dias foi batida. `;
-            } else {
-                resultado += `A meta de 3 dias não foi batida. `;
-            }
-
-            let justificativa = document.getElementById("justificativaInput").value;
-            if (justificativa.trim() !== '') {
-                resultado += `<br>Justificativa: ${justificativa}`;
-            }
-
-            document.getElementById("resultado").innerHTML = resultado;
-        }
-
-        function calcularHorasFaltantes(totalHoras, totalMinutosExatos) {
-            let minutosFaltantes = 7 * 60 - (totalHoras * 60 + totalMinutosExatos);
-            let horasFaltantes = Math.floor(minutosFaltantes / 60);
-            let minutosRestantes = minutosFaltantes % 60;
-
-            let resultText = `Faltam ${horasFaltantes} horas e ${minutosRestantes} minutos para atingir a meta de 7 horas na semana.`;
-            document.getElementById("horasFaltantes").innerHTML = resultText;
-        }
-
-        function salvarEmBlocoDeNotas() {
-            let id = document.getElementById("idInput").value;
-            let nome = document.getElementById("nomeInput").value;
-            let funcao = document.getElementById("funcaoInput").value;
-            let justificativa = document.getElementById("justificativaInput").value;
-
-            let conteudo = `ID: ${id}\n`;
-            conteudo += `Nome: ${nome}\n`;
-            conteudo += `Função: ${funcao}\n\n`;
-
-            if (justificativa.trim() !== '') {
-                conteudo += `Justificativa: ${justificativa}\n\n`;
-            }
-
-            conteudo += "Resultados:\n";
-            conteudo += document.getElementById("resultado").innerHTML.trim().replace(/<br>/g, "\n") + "\n";
-
-            let horasFaltantes = document.getElementById("horasFaltantes").innerHTML.trim();
-            conteudo += `${horasFaltantes}\n\n`;
-
-            conteudo += "Dados de Ponto:\n";
-            dados.forEach(item => {
-                conteudo += `${item.dados}\n`;
+            timeMap.forEach(time => {
+                totalHours += time.hours;
+                totalMinutes += time.minutes;
             });
 
-            // Salvando o conteúdo em um arquivo
-            let filename = `${id}_${nome}.txt`;
-            download(filename, conteudo);
+            if (totalMinutes >= 60) {
+                totalHours += Math.floor(totalMinutes / 60);
+                totalMinutes = totalMinutes % 60;
+            }
+
+            let metaHours = 7;
+            let hoursRemaining = Math.max(metaHours - totalHours, 0);
+            let minutesRemaining = hoursRemaining > 0 ? Math.max(60 - totalMinutes, 0) : Math.max(metaHours * 60 - totalMinutes, 0);
+
+            if (hoursRemaining === 0 && minutesRemaining === 0) {
+                hoursRemaining = 0;
+                minutesRemaining = 0;
+            }
+
+            let metaStatus = `A meta de ${metaHours} horas foi ${
+                totalHours >= metaHours ? 'batida' : `não foi batida. Faltam ${hoursRemaining} horas e ${minutesRemaining} minutos.`
+            } ${totalDays >= 3 ? 'A meta de 3 dias foi batida.' : `A meta de 3 dias não foi batida. Faltam ${Math.max(3 - totalDays, 0)} dias.`}`;
+
+            document.getElementById('totalTime').innerText = `Tempo total trabalhado: ${totalHours} horas e ${totalMinutes} minutos.`;
+            document.getElementById('daysWorked').innerText = `Dias trabalhados: ${totalDays}.`;
+            document.getElementById('metaStatus').innerText = metaStatus;
+            document.getElementById('justificationResult').innerText = document.getElementById('justification').value.trim() ? `Justificativa: ${document.getElementById('justification').value.trim()}` : '';
         }
 
-        function download(filename, conteudo) {
-            var element = document.createElement('a');
-            element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(conteudo));
-            element.setAttribute('download', filename);
+        function calculateManualPoint() {
+            let text = document.getElementById('manualEntries').value.trim();
+            let lines = text.split('\n');
+            let date = '';
+            let entryTime = '';
+            let exitTime = '';
 
-            element.style.display = 'none';
-            document.body.appendChild(element);
+            lines.forEach(line => {
+                if (line.startsWith('Data:')) {
+                    date = line.replace('Data:', '').trim();
+                } else if (line.startsWith('Entrada:')) {
+                    entryTime = line.replace('Entrada:', '').trim();
+                } else if (line.startsWith('Saída:')) {
+                    exitTime = line.replace('Saída:', '').trim();
+                }
+            });
 
-            element.click();
+            if (!date || !entryTime || !exitTime) {
+                alert('Por favor, verifique o formato da entrada. Todos os campos devem estar presentes.');
+                return;
+            }
 
-            document.body.removeChild(element);
+            let [entryHours, entryMinutes] = entryTime.split(':').map(Number);
+            let [exitHours, exitMinutes] = exitTime.split(':').map(Number);
+
+            if (isNaN(entryHours) || isNaN(entryMinutes) || isNaN(exitHours) || isNaN(exitMinutes)) {
+                alert('Por favor, insira horas e minutos válidos.');
+                return;
+            }
+
+            let entryDateTime = new Date(`${date.split('/').reverse().join('-')}T${entryHours.toString().padStart(2, '0')}:${entryMinutes.toString().padStart(2, '0')}:00`);
+            let exitDateTime = new Date(`${date.split('/').reverse().join('-')}T${exitHours.toString().padStart(2, '0')}:${exitMinutes.toString().padStart(2, '0')}:00`);
+
+            if (exitDateTime < entryDateTime) {
+                exitDateTime.setDate(exitDateTime.getDate() + 1);
+            }
+
+            let timeDifferenceInMinutes = (exitDateTime - entryDateTime) / (1000 * 60);
+            let totalHours = Math.floor(timeDifferenceInMinutes / 60);
+            let totalMinutes = timeDifferenceInMinutes % 60;
+
+            let currentTotal = document.getElementById('totalTime').innerText.match(/(\d+) horas e (\d+) minutos/);
+            if (currentTotal) {
+                totalHours += parseInt(currentTotal[1], 10);
+                totalMinutes += parseInt(currentTotal[2], 10);
+                if (totalMinutes >= 60) {
+                    totalHours += Math.floor(totalMinutes / 60);
+                    totalMinutes = totalMinutes % 60;
+                }
+            }
+
+            let metaHours = 7;
+            let hoursRemaining = Math.max(metaHours - totalHours, 0);
+            let minutesRemaining = (hoursRemaining === 0) ? Math.max(60 - totalMinutes, 0) : Math.max(60 - totalMinutes, 0);
+
+            if (hoursRemaining === 0 && minutesRemaining === 0) {
+                hoursRemaining = 0;
+                minutesRemaining = 0;
+            }
+
+            let metaStatus = `A meta de ${metaHours} horas foi ${
+                totalHours >= metaHours ? 'batida' : `não foi batida. Faltam ${hoursRemaining} horas e ${minutesRemaining} minutos.`
+            }.`;
+
+            document.getElementById('totalTime').innerText = `Tempo total trabalhado: ${totalHours} horas e ${totalMinutes} minutos.`;
+            document.getElementById('metaStatus').innerText = metaStatus;
+        }
+
+        function addExtraTime() {
+            let extraHours = parseInt(document.getElementById('extraHours').value, 10) || 0;
+            let extraMinutes = parseInt(document.getElementById('extraMinutes').value, 10) || 0;
+
+            if (isNaN(extraHours) || isNaN(extraMinutes)) {
+                alert('Por favor, insira horas e minutos válidos.');
+                return;
+            }
+
+            let currentTotal = document.getElementById('totalTime').innerText.match(/(\d+) horas e (\d+) minutos/);
+            let totalHours = (currentTotal ? parseInt(currentTotal[1], 10) : 0) + extraHours;
+            let totalMinutes = (currentTotal ? parseInt(currentTotal[2], 10) : 0) + extraMinutes;
+
+            if (totalMinutes >= 60) {
+                totalHours += Math.floor(totalMinutes / 60);
+                totalMinutes = totalMinutes % 60;
+            }
+
+            let metaHours = 7;
+            let hoursRemaining = Math.max(metaHours - totalHours, 0);
+            let minutesRemaining = (hoursRemaining === 0) ? Math.max(60 - totalMinutes, 0) : Math.max(60 - totalMinutes, 0);
+
+            if (hoursRemaining === 0 && minutesRemaining === 0) {
+                hoursRemaining = 0;
+                minutesRemaining = 0;
+            }
+
+            let metaStatus = `A meta de ${metaHours} horas foi ${
+                totalHours >= metaHours ? 'batida' : `não foi batida. Faltam ${hoursRemaining} horas e ${minutesRemaining} minutos.`
+            }.`;
+
+            document.getElementById('totalTime').innerText = `Tempo total trabalhado: ${totalHours} horas e ${totalMinutes} minutos.`;
+            document.getElementById('metaStatus').innerText = metaStatus;
         }
     </script>
-    <center>
-        <img src="https://i.postimg.cc/nr7qgTWj/Logo-VRT-Andrea-Silva11.png" alt="">
-    </center>
 </body>
 </html>
