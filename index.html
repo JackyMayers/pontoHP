@@ -227,8 +227,8 @@
             resultText += `Função: ${document.getElementById('employeeRole').value}\n\n`;
             resultText += `Tempo total trabalhado: ${totalHoursWorked} horas e ${totalMinutesWorked} minutos.\n`;
             resultText += `Dias trabalhados: ${daysTracked.size}.\n`;
-            resultText += `A meta de ${metaHours} horas foi ${hoursRemaining > 0 ? 'não batida' : 'batida'}.\n`;
-            resultText += `A meta de ${metaDays} dias foi ${daysRemaining > 0 ? 'não batida' : 'batida'}.\n\n`;
+            resultText += `A meta de ${metaHours} horas ${hoursRemaining > 0 ? 'não foi batida' : 'foi batida'}.\n`;
+            resultText += `A meta de ${metaDays} dias ${daysRemaining > 0 ? 'não foi batida' : 'foi batida'}.\n\n`;
             resultText += `Detalhes de Ponto:\n${entriesList.join('\n')}\n\n`;
             resultText += `Justificativa: ${document.getElementById('justification').value}\`\`\``;
 
